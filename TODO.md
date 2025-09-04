@@ -43,6 +43,10 @@ npm install --save-dev @types/redis @types/koa @types/koa-bodyparser @types/koa2
 
 npx tsc --init
 
+npm install ws
+npm install --save-dev @types/ws
 
 
-*setup docker*
+
+*setup docker* [done]
+

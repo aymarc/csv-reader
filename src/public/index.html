@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Uploader Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f8f9fa;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #e9ecef;
+            border-radius: .25rem;
+            margin-top: 1rem;
+        }
+        .progress-bar {
+            height: 30px;
+            background-color: #0d6efd;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+            border-radius: .25rem;
+        }
+        .list-group-item.active {
+            background-color: #0d6efd !important;
+            border-color: #0d6efd !important;
+        }
+        .dashboard-container {
+            min-height: 90vh;
+        }
+        .dashboard-sidebar {
+            background-color: #f1f3f5;
+            padding: 1rem;
+            border-right: 1px solid #dee2e6;
+            min-height: 90vh;
+        }
+        .dashboard-main {
+            padding: 1rem;
+        }
+        .file-upload-form {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .dashboard-sidebar .button-area{
+            background: #97b2e6;
+            width: 100%;
+            z-index:2;
+            cursor: pointer
+        }
+    </style>
+</head>
+<body>
+
+<!-- Login View -->
+<div id="loginView" class="container file-upload-form">
+    <div class="card shadow-sm p-4">
+        <h1 class="card-title text-center mb-4">Csv Uploader</h1>
+        <form id="loginForm">
+            <div class="mb-3">
+                <label for="email" class="form-label">Enter your Email</label>
+                <input type="email" id="email" class="form-control" name="email" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Start a session</button>
+        </form>
+    </div>
+</div>
+
+<!-- Dashboard View -->
+<div id="dashboardView" class="container-fluid d-none dashboard-container">
+    <nav class="navbar navbar-light bg-light">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1"></span>
+        </div>
+    </nav>
+    <div class="row g-0">
+        <!-- Sidebar -->
+        <div class="col-md-3 dashboard-sidebar">
+            <div class="d-flex flex-column justify-content-between align-items-center mb-3">
+                <div class="button-area" id="uploadButton">
+                    <button  class="btn btn-primary btn-sm d-flex align-items-center mb-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-1" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/>
+                        </svg>
+                        Upload
+                    </button>
+                </div>
+                <h5 class="mb-0">Uploaded Files</h5>
+                
+            </div>
+            <ul class="list-group" id="fileList">
+                <!-- File items will be dynamically added here -->
+            </ul>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-md-9 dashboard-main">
+            <div id="mainContent">
+                <div class="alert alert-info" role="alert">
+                    Select a file from the left to view its contents.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for CSV Upload -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadModalLabel">Upload CSV File</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm">
+                    <div class="mb-3">
+                        <label for="csvFile" class="form-label">Choose CSV file:</label>
+                        <input type="file" name="csvFile" id="csvFile" class="form-control" accept=".csv" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Upload</button>
+                </form>
+                <div id="status" class="mt-3 text-center"></div>
+                <div class="progress mt-3">
+                    <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const loginView = document.getElementById('loginView');
+    const dashboardView = document.getElementById('dashboardView');
+    const loginForm = document.getElementById('loginForm');
+    const uploadButton = document.getElementById('uploadButton');
+    const uploadForm = document.getElementById('uploadForm');
+    const statusDiv = document.getElementById('status');
+    const progressBar = document.getElementById('progressBar');
+    const fileList = document.getElementById('fileList');
+    const mainContent = document.getElementById('mainContent');
+    let ws;
+    let uploadModal;
+
+    const connectWebSocket = (email) => {
+        ws = new WebSocket(`ws://0.0.0.0:5000`);
+        ws.onopen = () => {
+            console.log('WebSocket connection opened.');
+            ws.send(JSON.stringify({ email }));
+        };
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.progress !== undefined) {
+                const progress = parseFloat(data.progress.toFixed(2));
+                const timeRemaining = parseFloat(data.timeRemaining.toFixed(2));
+                progressBar.style.width = `${progress}%`;
+                progressBar.textContent = `${progress}% - ${timeRemaining}s remaining`;
+            } else if (data.message === "File list updated") {
+                // You would handle the file list update here if the server sent it.
+            }
+        };
+    };
+
+    const showDashboard = () => {
+        loginView.classList.add('d-none');
+        dashboardView.classList.remove('d-none');
+    };
+
+    // Check for a token on page load
+    window.onload = () => {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            showDashboard();
+            const email = localStorage.getItem('userEmail');
+            if (email) {
+                connectWebSocket(email);
+            }
+        }
+        uploadModal = new bootstrap.Modal(document.getElementById('uploadModal'));
+    };
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userEmail = document.getElementById('email').value;
+        localStorage.setItem('userEmail', userEmail);
+        // Here you would typically get a token from the server
+        localStorage.setItem('authToken', 'temp_token_for_now'); 
+        showDashboard();
+        connectWebSocket(userEmail);
+    });
+    
+    uploadButton.addEventListener('click', () => {
+        uploadModal.show();
+    });
+
+    uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        statusDiv.textContent = 'Uploading...';
+        progressBar.style.width = '0%';
+        progressBar.textContent = '0%';
+
+        const formData = new FormData(uploadForm);
+        const token = localStorage.getItem('authToken');
+        formData.append('token', token);
+
+        try {
+            const response = await fetch('/upload-csv', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.text();
+            statusDiv.textContent = result;
+            console.log(result);
+            progressBar.style.width = '100%';
+            progressBar.textContent = '100% - Done!';
+            // Here you would refresh the file list
+        } catch (error) {
+            statusDiv.textContent = 'Upload failed.';
+            console.error('Error:', error);
+        }
+    });
+
+</script>
+</body>
+</html>
