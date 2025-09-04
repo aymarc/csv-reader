@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: csv-app
+    restart: always
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - db
+      - redis
+    # The 'command' field is removed to let the Dockerfile's 'CMD' take effect.
+
+  db:
+    image: postgres:15
+    container_name: postgres-db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: redis-cache
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  pg_data:
+  redis_data:

@@ -31,7 +31,7 @@ Note: us winston for log
 Note: due to time limitations. I will cover only one sheet 
 
 
- *Project setup* 
+ *Project setup*  [done]
 npm init 
 
 installing dependencies
@@ -42,3 +42,7 @@ npm install --save-dev @types/redis @types/koa @types/koa-bodyparser @types/koa2
  @types/koa-router @types/koa-busboy @types/pg @types/uuid
 
 npx tsc --init
+
+
+
+*setup docker*

@@ -26,12 +26,12 @@ router.post("/test", async (ctx: Context) => {
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-const server = app
-  .listen(config.PORT, async () => {
+app
+  .listen(config.PORT, "0.0.0.0", async () => {
     console.log(`Server listening on port: ${config.PORT}`);
   })
   .on("error", (err) => {
     console.error(err);
   });
 
-export default server;
+
