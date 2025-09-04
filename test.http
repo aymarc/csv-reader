@@ -1,0 +1,15 @@
+### POST
+# @
+POST http://localhost:5000/test HTTP/1.1
+content-type: application/json
+
+{
+    "name": "Marie Jane",
+    "email": "jane@example.com",
+    "streetAddress": "some where on Jupiter",
+    "password": "P@ssw0rd"
+}
+
+
+### GET
+GET http://localhost:5000/test HTTP/1.1
