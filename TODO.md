@@ -29,3 +29,15 @@ Note: us winston for log
   
   
 Note: due to time limitations. I will cover only one sheet 
+
+
+---- *Project setup* ----
+npm init 
+
+installing dependencies
+npm install koa koa-bodyparser koa-router koa2-cors redis ts-node typescript pg
+
+install dev dependencies
+npm install --save-dev @types/redis @types/koa @types/koa-bodyparser @types/koa2-cors @types/node ts-node-dev @types/pg
+
+npx tsc --init
